@@ -19,9 +19,7 @@ if st.button("Fetch and Plot"):
 
     if df.empty:
         st.warning("No data found for the specified report date.")
-    else:
-        st.write("Top Holdings Data:")
-        #st.dataframe(df)
+    
 
       # Convert 'counter' values to integers for the heatmap
     import math
@@ -41,7 +39,7 @@ if st.button("Fetch and Plot"):
     pivot_table = df.pivot(index='y_rows', columns='x_cols', values='CounterRelative')
     fig, ax = plt.subplots(figsize=(18, 7))
 
-    title = f"Top 100 Holdings Distribution Across 13F Filings, {reporting_date}"
+    title = f"Top superinvestors holdings for the period , {reporting_date[1]} -  {reporting_date[0]} "
     heatmap_labels = np.asarray(["{0} \n {1}%".format(ticker, counter) 
                               for ticker, counter in zip(tickers.flatten(), counters.flatten())]).reshape(shape)
 
@@ -68,13 +66,13 @@ if st.button("Fetch and Plot"):
     mask_2 = all_holding_changes['DeltaRelative'] != np.inf
     bought_all = all_holding_changes[(mask_1 & mask_2)].sort_values(by=['DeltaRelative'], ascending=False)
     top_100_bought = bought_all[bought_all['Shares2021_03_31'] > 500000][:100].reset_index()
-    plot_holdings(top_100_bought,'bought',reporting_date[::-1])
+    plot_holdings(top_100_bought,'buy',reporting_date[::-1])
 
     mask_1 = all_holding_changes['DeltaRelative'] < 0
     mask_2 = all_holding_changes['DeltaRelative'] != np.inf
     bought_all = all_holding_changes[(mask_1 & mask_2)].sort_values(by=['DeltaRelative'], ascending=True)
     top_100_sold = bought_all[bought_all['Shares2021_03_31'] < 500000][:100].reset_index()
-    plot_holdings(top_100_sold,'sold',reporting_date[::-1])
+    plot_holdings(top_100_sold,'sell',reporting_date[::-1])
 
     #all_holding_df['Current Price'] = all_holding_df.apply(get_ticker_stock_price_from_name,axis=1)
     all_holding_df['purchase_price_per_share'] = all_holding_df.apply(calculate_purchase_price, axis=1)
@@ -89,4 +87,7 @@ if st.button("Fetch and Plot"):
     sorted_df = filtered_df.sort_values(by='Percentage Difference')
     # Display top tickers
     top_tickers = sorted_df[['Ticker', 'Current Price', 'purchase_price_per_share', 'Percentage Difference']]
-    plot_price_holdings(top_tickers.head(100),'price diff',reporting_date[::-1])
+    #st.dataframe(top_tickers.head(100))
+    top_100_tickers = top_tickers.drop_duplicates(subset='Ticker').head(100)
+
+    plot_price_holdings(top_100_tickers,'price diff',reporting_date[::-1])

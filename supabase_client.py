@@ -194,7 +194,7 @@ def plot_holdings(top_holdings, activity,reporting_date):
                                  for ticker, counter in zip(tickers.flatten(), counters.flatten())]).reshape(shape)
     fig, ax = plt.subplots(figsize=(18, 7))
 
-    title = f"Top 100 {activity} Holdings Distribution Across 13F Filings, {reporting_date}"
+    title = f"Top superinvestors {activity} for the period , {reporting_date[0]} -  {reporting_date[1]} "
 
     plt.title(title, fontsize=18)
     ttl = ax.title
@@ -228,9 +228,9 @@ def plot_price_holdings(top_holdings, activity,reporting_date):
     #shape = reshape_to_closest(np.asarray(top_holdings['Ticker']))
     total_number_of_funds =3005
     # top_holdings['CounterRelative'] = [round(counter/(total_number_of_funds )*100,1) for counter in top_holdings['counter ']]
-    top_holdings['DeltaRelative'] = round(top_holdings['Percentage Difference']/(total_number_of_funds )*100, 1)
+    top_holdings['pdifference'] = round(top_holdings['Percentage Difference'], 1)
     tickers = np.asarray(top_holdings['Ticker']).reshape(shape)
-    counters = np.asarray(top_holdings['DeltaRelative']).reshape(shape)
+    counters = np.asarray(top_holdings['pdifference']).reshape(shape)
 
     top_holdings['Position'] = range(1, len(top_holdings) + 1)
     top_holdings['y_rows'] = [(math.floor(x/shape[1]) + 1 if x % shape[1]
@@ -239,12 +239,13 @@ def plot_price_holdings(top_holdings, activity,reporting_date):
         (x % shape[1] if x % shape[1] != 0 else shape[1]) for x in top_holdings['Position']]
 
     pivot_table = top_holdings.pivot(
-        index='y_rows', columns='x_cols', values='DeltaRelative')
+        index='y_rows', columns='x_cols', values='pdifference')
     heatmap_labels = np.asarray(["{0} \n {1}%".format(ticker, counter)
                                  for ticker, counter in zip(tickers.flatten(), counters.flatten())]).reshape(shape)
     fig, ax = plt.subplots(figsize=(18, 7))
 
-    title = f"Top 100 {activity} Holdings Distribution Across 13F Filings, {reporting_date}"
+   
+    title = f"Top superinvestors percentage change from time it was bought , {reporting_date[0]} -  {reporting_date[1]} "
 
     plt.title(title, fontsize=18)
     ttl = ax.title
@@ -256,7 +257,7 @@ def plot_price_holdings(top_holdings, activity,reporting_date):
     ax.axis('off')
 
     sns.heatmap(pivot_table, annot=heatmap_labels, fmt="",
-                cmap="BuGn", linewidths=0.30, ax=ax)
+                cmap="BuGn_r", linewidths=0.30, ax=ax)
 
     st.pyplot(fig)
 

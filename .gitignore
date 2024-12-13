@@ -2,3 +2,5 @@
 .history/
 .streamlit/
 update_ticker_price.py
+update_ticker_download.py
+__pycache__/

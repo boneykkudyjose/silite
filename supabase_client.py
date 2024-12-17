@@ -157,27 +157,64 @@ def calculate_shape(n_elements):
             min_diff = diff
 
     return best_rows, best_cols
+import math
 
+def calculate_rows_cols(n_elements):
+    """
+    Dynamically calculates the number of rows and columns for reshaping an array.
+    Ensures that rows * cols <= n_elements, with rows and cols being as close as possible.
+    
+    Parameters:
+    - n_elements (int): Total number of elements in the array.
 
+    Returns:
+    - tuple: (rows, cols) representing the optimal shape.
+    """
+    # Start by calculating the square root of n_elements
+    sqrt_val = math.isqrt(n_elements)
+    
+    # Check if the square root value divides n_elements evenly
+    if n_elements % sqrt_val == 0:
+        rows, cols = sqrt_val, n_elements // sqrt_val
+    else:
+        # If not, find the closest pair of factors
+        rows, cols = sqrt_val, n_elements // sqrt_val
+        if rows * cols < n_elements:
+            cols -= 1
+    
+    return rows, cols
+
+def calculate_rows_and_columns(array, target_columns=6):
+    rows = len(array) // target_columns  # Calculate full rows
+    remainder = len(array) % target_columns  # Check for leftover elements
+
+    if remainder != 0:  # If there's a remainder, add one more row
+        rows += 1
+
+    return rows, target_columns
 
 
 
 def plot_holdings(top_holdings, activity,reporting_date):
     # Convert the 'Ticker' column to a NumPy array
+    top_holdings = top_holdings.drop_duplicates(subset='Ticker')
+
     tickers = np.asarray(top_holdings['Ticker'])
     # Calculate the optimal shape
     n_elements = len(tickers) 
     print(f'n_elements {n_elements}')
-    data = np.arange(1, n_elements+1)  # Array with 63 elements
+    data = np.arange(1, n_elements) 
+    print(data)
+
     # Calculate dynamic shape
-    rows, cols = calculate_shape(len(data))
+    #rows, cols = calculate_shape(len(data))
+    rows, cols =  calculate_rows_cols(n_elements)
     shape=(rows,cols)
     print(rows,cols)
-    #shape = (7, 9)
-
     #shape = reshape_to_closest(np.asarray(top_holdings['Ticker']))
     total_number_of_funds =3005
     # top_holdings['CounterRelative'] = [round(counter/(total_number_of_funds )*100,1) for counter in top_holdings['counter ']]
+
     top_holdings['DeltaRelative'] = round(top_holdings['DeltaRelative']/(total_number_of_funds )*100, 1)
     tickers = np.asarray(top_holdings['Ticker']).reshape(shape)
     counters = np.asarray(top_holdings['DeltaRelative']).reshape(shape)
@@ -188,12 +225,13 @@ def plot_holdings(top_holdings, activity,reporting_date):
     top_holdings['x_cols'] = [
         (x % shape[1] if x % shape[1] != 0 else shape[1]) for x in top_holdings['Position']]
 
+
     pivot_table = top_holdings.pivot(
         index='y_rows', columns='x_cols', values='DeltaRelative')
+    print(pivot_table)
     heatmap_labels = np.asarray(["{0} \n {1}%".format(ticker, counter)
                                  for ticker, counter in zip(tickers.flatten(), counters.flatten())]).reshape(shape)
     fig, ax = plt.subplots(figsize=(18, 7))
-
     title = f"Top superinvestors {activity} for the period , {reporting_date[0]} -  {reporting_date[1]} "
 
     plt.title(title, fontsize=18)
@@ -206,11 +244,55 @@ def plot_holdings(top_holdings, activity,reporting_date):
     ax.axis('off')
 
     sns.heatmap(pivot_table, annot=heatmap_labels, fmt="",
-                cmap="BuGn", linewidths=0.30, ax=ax)
+                cmap="BuGn_r", linewidths=0.30, ax=ax)
 
     st.pyplot(fig)
 
 
+
+def plot_holdings2(top_holdings, activity, reporting_date):
+    # Ensure total_number_of_funds is dynamic or correct
+    total_number_of_funds = 3005
+
+    # Calculate DeltaRelative as percentage of the total number of funds
+    top_holdings['DeltaRelative'] = round(top_holdings['DeltaRelative'] / total_number_of_funds * 100, 1)
+
+    # Create row and column positions for heatmap grid (3 columns per row)
+    top_holdings = top_holdings.assign(
+        row = np.arange(len(top_holdings)) // 6,
+        col = np.arange(len(top_holdings)) % 6
+    )
+
+    # Create pivot for heatmap data
+    change = top_holdings.pivot(index='row', columns='col', values='DeltaRelative')
+
+    # Add labels for tickers and DeltaRelative in the format "Ticker\nDeltaRelative%"
+    top_holdings['Label'] = top_holdings['Ticker'].str.cat(top_holdings['DeltaRelative'].apply('{:.2f}%'.format), sep='\n')
+
+    # Create pivot for heatmap annotations (labels)
+    labels = top_holdings.pivot(index='row', columns='col', values='Label')
+
+    # Create figure and axis for the plot
+    fig, ax = plt.subplots(figsize=(18, 7))
+
+    # Set plot title with dynamic text
+    title = f"Top superinvestors {activity} for the period, {reporting_date[0]} - {reporting_date[1]}"
+    plt.title(title, fontsize=18)
+
+    # Adjust title position
+    ttl = ax.title
+    ttl.set_position([0.5, 1.05])
+
+    # Remove axis ticks and labels
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.axis('off')
+
+    # Plot the heatmap using seaborn with annotations
+    sns.heatmap(change, annot=labels, fmt='', cmap='RdYlGn', linewidths=0.4, cbar=False)
+
+    # Display the plot in Streamlit
+    st.pyplot(fig)
 
 def plot_price_holdings(top_holdings, activity,reporting_date):
     # Convert the 'Ticker' column to a NumPy array
@@ -219,6 +301,8 @@ def plot_price_holdings(top_holdings, activity,reporting_date):
     n_elements = len(tickers) 
     print(f'n_elements {n_elements}')
     data = np.arange(1, n_elements+1) 
+    print(data)
+
     # Calculate dynamic shape
     rows, cols = calculate_shape(len(data))
     shape=(rows,cols)
